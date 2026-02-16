@@ -1,0 +1,126 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Python Control Center - Web Dashboard</title>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.3.0/papaparse.min.js"></script>
+    <style>
+        body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background-color: #f4f4f9; color: #333; margin: 0; padding: 20px; }
+        .container { max-width: 1200px; margin: 0 auto; }
+        h1 { text-align: center; color: #2c3e50; }
+        .status-panel { display: flex; flex-wrap: wrap; gap: 20px; justify-content: center; margin-bottom: 30px; }
+        .card { background: white; padding: 20px; border-radius: 10px; box-shadow: 0 4px 6px rgba(0,0,0,0.1); width: 200px; text-align: center; cursor: pointer; transition: transform 0.2s; }
+        .card:hover { transform: translateY(-5px); }
+        .card h3 { margin: 0 0 10px 0; font-size: 1.2em; color: #7f8c8d; }
+        .card .price { font-size: 1.5em; font-weight: bold; color: #27ae60; }
+        .card .date { font-size: 0.8em; color: #95a5a6; margin-top: 5px; }
+        .chart-container { background: white; padding: 20px; border-radius: 10px; box-shadow: 0 4px 6px rgba(0,0,0,0.1); display: none; }
+        canvas { max-width: 100%; }
+        .back-btn { display: inline-block; margin-bottom: 20px; padding: 10px 20px; background: #3498db; color: white; border-radius: 5px; text-decoration: none; cursor: pointer; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>📊 行情儀表板</h1>
+        <div id="status-panel" class="status-panel">
+            <!-- Cards will be injected here -->
+        </div>
+
+        <div id="chart-view" class="chart-container">
+            <div class="back-btn" onclick="hideChart()">🔙 返回列表</div>
+            <h2 id="chart-title">趨勢圖</h2>
+            <canvas id="myChart"></canvas>
+        </div>
+    </div>
+
+    <script>
+        const symbols = [
+            { code: 'BTC', name: 'Bitcoin (USD)', file: 'data/currency/BTC.csv' },
+            { code: 'USDTWD', name: 'USD vs NTD', file: 'data/currency/USDTWD.csv' },
+            { code: 'USDVND', name: 'USD vs VND', file: 'data/currency/USDVND.csv' },
+            { code: 'NTDVND', name: 'NTD vs VND', file: 'data/currency/NTDVND.csv' }
+        ];
+
+        async function loadData(file) {
+            return new Promise((resolve) => {
+                Papa.parse(file, {
+                    download: true,
+                    header: true,
+                    complete: function(results) {
+                        resolve(results.data.filter(row => row.Date && row.Close));
+                    }
+                });
+            });
+        }
+
+        async function init() {
+            const panel = document.getElementById('status-panel');
+            
+            for (const sym of symbols) {
+                try {
+                    const data = await loadData(sym.file);
+                    if (data.length === 0) continue;
+                    
+                    const last = data[data.length - 1];
+                    const price = parseFloat(last.Close).toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2});
+                    const date = new Date(last.Date).toLocaleDateString();
+
+                    const card = document.createElement('div');
+                    card.className = 'card';
+                    card.innerHTML = `
+                        <h3>${sym.name}</h3>
+                        <div class="price">${price}</div>
+                        <div class="date">${date}</div>
+                    `;
+                    card.onclick = () => showChart(sym, data);
+                    panel.appendChild(card);
+                } catch (e) {
+                    console.error(`Error loading ${sym.code}:`, e);
+                }
+            }
+        }
+
+        let chartInstance = null;
+
+        function showChart(sym, data) {
+            document.getElementById('status-panel').style.display = 'none';
+            document.getElementById('chart-view').style.display = 'block';
+            document.getElementById('chart-title').innerText = `${sym.name} 歷史趨勢`;
+
+            const ctx = document.getElementById('myChart').getContext('2d');
+            
+            // 簡化數據，如果太多點只取最近 100 點
+            const plotData = data.slice(-100); 
+
+            if (chartInstance) chartInstance.destroy();
+
+            chartInstance = new Chart(ctx, {
+                type: 'line',
+                data: {
+                    labels: plotData.map(d => new Date(d.Date).toLocaleDateString()),
+                    datasets: [{
+                        label: 'Close Price',
+                        data: plotData.map(d => parseFloat(d.Close)),
+                        borderColor: '#3498db',
+                        tension: 0.1,
+                        fill: false
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    interaction: { mode: 'index', intersect: false }
+                }
+            });
+        }
+
+        function hideChart() {
+            document.getElementById('chart-view').style.display = 'none';
+            document.getElementById('status-panel').style.display = 'flex';
+        }
+
+        init();
+    </script>
+</body>
+</html>

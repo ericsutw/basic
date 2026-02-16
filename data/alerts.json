@@ -1,0 +1,28 @@
+{
+    "alerts": [
+        {
+            "symbol": "Gold",
+            "type": "fluctuation",
+            "threshold_percent": 10.0,
+            "period": "daily"
+        },
+        {
+            "symbol": "BTC-USD",
+            "type": "fluctuation",
+            "threshold_percent": 10.0,
+            "period": "daily"
+        },
+        {
+            "symbol": "USDTWD",
+            "type": "fluctuation",
+            "threshold_percent": 10.0,
+            "period": "daily"
+        },
+        {
+            "symbol": "USDVND",
+            "type": "fluctuation",
+            "threshold_percent": 10.0,
+            "period": "daily"
+        }
+    ]
+}

@@ -1,0 +1,54 @@
+name: Daily Update
+
+on:
+  schedule:
+    - cron: '0 0 * * *'  # 每天 UTC 0:00 (台灣時間 8:00) 執行
+  workflow_dispatch:      # 允許手動觸發
+
+jobs:
+  update:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write  # 重要：允許寫入儲存庫
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v3
+
+      - name: Set up Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: '3.10'
+
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements.txt
+
+      - name: Run Update Scripts
+        run: |
+          # 更新匯率資料
+          python scripts/currency_tracker.py update
+          
+          # 更新黃金資料 (注意：由於 IP 限制，在 GitHub Actions 可能會被封鎖，建議主要依賴匯率)
+          # python scripts/gold_tracker.py update 
+
+      - name: Check for Changes
+        id: check_changes
+        run: |
+          if [[ -n $(git status -s data/) ]]; then
+            echo "changes_exist=true" >> $GITHUB_OUTPUT
+            echo "Data folder has changes."
+          else
+            echo "changes_exist=false" >> $GITHUB_OUTPUT
+            echo "No changes in data folder."
+          fi
+
+      - name: Commit and Push
+        if: steps.check_changes.outputs.changes_exist == 'true'
+        run: |
+          git config --global user.name "GitHub Actions Bot"
+          git config --global user.email "actions@github.com"
+          git add data/
+          git commit -m "Auto-update data [skip ci]"
+          git push
