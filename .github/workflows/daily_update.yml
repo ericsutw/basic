@@ -30,8 +30,8 @@ jobs:
           # 更新匯率資料
           python scripts/currency_tracker.py update
           
-          # 更新黃金資料 (注意：由於 IP 限制，在 GitHub Actions 可能會被封鎖，建議主要依賴匯率)
-          # python scripts/gold_tracker.py update 
+          # 更新黃金資料
+          python scripts/gold_tracker.py update 
 
       - name: Check for Changes
         id: check_changes
