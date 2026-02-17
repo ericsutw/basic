@@ -1,5 +1,6 @@
 <!DOCTYPE html>
 <html lang="zh-TW">
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -7,20 +8,106 @@
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.3.0/papaparse.min.js"></script>
     <style>
-        body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background-color: #f4f4f9; color: #333; margin: 0; padding: 20px; }
-        .container { max-width: 1200px; margin: 0 auto; }
-        h1 { text-align: center; color: #2c3e50; }
-        .status-panel { display: flex; flex-wrap: wrap; gap: 20px; justify-content: center; margin-bottom: 30px; }
-        .card { background: white; padding: 20px; border-radius: 10px; box-shadow: 0 4px 6px rgba(0,0,0,0.1); width: 200px; text-align: center; cursor: pointer; transition: transform 0.2s; }
-        .card:hover { transform: translateY(-5px); }
-        .card h3 { margin: 0 0 10px 0; font-size: 1.2em; color: #7f8c8d; }
-        .card .price { font-size: 1.5em; font-weight: bold; color: #27ae60; }
-        .card .date { font-size: 0.8em; color: #95a5a6; margin-top: 5px; }
-        .chart-container { background: white; padding: 20px; border-radius: 10px; box-shadow: 0 4px 6px rgba(0,0,0,0.1); display: none; }
-        canvas { max-width: 100%; }
-        .back-btn { display: inline-block; margin-bottom: 20px; padding: 10px 20px; background: #3498db; color: white; border-radius: 5px; text-decoration: none; cursor: pointer; }
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background-color: #f4f4f9;
+            color: #333;
+            margin: 0;
+            padding: 20px;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+
+        h1 {
+            text-align: center;
+            color: #2c3e50;
+        }
+
+        .status-panel {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 20px;
+            justify-content: center;
+            margin-bottom: 30px;
+        }
+
+        .card {
+            background: white;
+            padding: 20px;
+            border-radius: 10px;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+            width: 220px;
+            text-align: center;
+            cursor: pointer;
+            transition: transform 0.2s;
+            position: relative;
+        }
+
+        .card:hover {
+            transform: translateY(-5px);
+        }
+
+        .card h3 {
+            margin: 0 0 10px 0;
+            font-size: 1.1em;
+            color: #7f8c8d;
+        }
+
+        .card .price {
+            font-size: 1.5em;
+            font-weight: bold;
+            color: #2c3e50;
+        }
+
+        .card .change {
+            font-size: 0.9em;
+            margin-top: 5px;
+            font-weight: 500;
+        }
+
+        .card .change.up {
+            color: #e74c3c;
+        }
+
+        /* 漲用紅 (台灣習慣) 或可改綠 */
+        .card .change.down {
+            color: #27ae60;
+        }
+
+        .card .date {
+            font-size: 0.8em;
+            color: #95a5a6;
+            margin-top: 10px;
+        }
+
+        .chart-container {
+            background: white;
+            padding: 20px;
+            border-radius: 10px;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+            display: none;
+        }
+
+        canvas {
+            max-width: 100%;
+        }
+
+        .back-btn {
+            display: inline-block;
+            margin-bottom: 20px;
+            padding: 10px 20px;
+            background: #3498db;
+            color: white;
+            border-radius: 5px;
+            text-decoration: none;
+            cursor: pointer;
+        }
     </style>
 </head>
+
 <body>
     <div class="container">
         <h1>📊 行情儀表板</h1>
@@ -37,10 +124,11 @@
 
     <script>
         const symbols = [
-            { code: 'BTC', name: 'Bitcoin (USD)', file: 'data/currency/BTC.csv' },
-            { code: 'USDTWD', name: 'USD vs NTD', file: 'data/currency/USDTWD.csv' },
-            { code: 'USDVND', name: 'USD vs VND', file: 'data/currency/USDVND.csv' },
-            { code: 'NTDVND', name: 'NTD vs VND', file: 'data/currency/NTDVND.csv' }
+            { code: 'BTC', name: 'Bitcoin (USD)', file: 'data/currency/BTC.csv', field: 'Close' },
+            { code: 'USDTWD', name: 'USD vs NTD', file: 'data/currency/USDTWD.csv', field: 'Close' },
+            { code: 'USDVND', name: 'USD vs VND', file: 'data/currency/USDVND.csv', field: 'Close' },
+            { code: 'NTDVND', name: 'NTD vs VND', file: 'data/currency/NTDVND.csv', field: 'Close' },
+            { code: 'GOLD', name: 'Gold (TWD/g)', file: 'data/gold_prices.csv', field: 'sell_price', dateField: 'date' }
         ];
 
         async function loadData(file) {
@@ -48,8 +136,9 @@
                 Papa.parse(file, {
                     download: true,
                     header: true,
-                    complete: function(results) {
-                        resolve(results.data.filter(row => row.Date && row.Close));
+                    skipEmptyLines: true,
+                    complete: function (results) {
+                        resolve(results.data);
                     }
                 });
             });
@@ -57,22 +146,43 @@
 
         async function init() {
             const panel = document.getElementById('status-panel');
-            
+            panel.innerHTML = ''; // 清空
+
             for (const sym of symbols) {
                 try {
-                    const data = await loadData(sym.file);
+                    let data = await loadData(sym.file);
+                    // 過濾無效資料
+                    const valField = sym.field || 'Close';
+                    const dateField = sym.dateField || 'Date';
+                    data = data.filter(row => row[dateField] && row[valField]);
+
                     if (data.length === 0) continue;
-                    
+
                     const last = data[data.length - 1];
-                    const price = parseFloat(last.Close).toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2});
-                    const date = new Date(last.Date).toLocaleDateString();
+                    const prev = data.length > 1 ? data[data.length - 2] : null;
+
+                    const priceValue = parseFloat(last[valField]);
+                    const priceStr = priceValue.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+                    const dateStr = new Date(last[dateField]).toLocaleDateString();
+
+                    // 計算漲跌
+                    let changeHtml = '';
+                    if (prev) {
+                        const prevValue = parseFloat(prev[valField]);
+                        const diff = priceValue - prevValue;
+                        const pct = (diff / prevValue) * 100;
+                        const cls = diff >= 0 ? 'up' : 'down';
+                        const sign = diff >= 0 ? '▲' : '▼';
+                        changeHtml = `<div class="change ${cls}">${sign} ${Math.abs(diff).toFixed(2)} (${Math.abs(pct).toFixed(2)}%)</div>`;
+                    }
 
                     const card = document.createElement('div');
                     card.className = 'card';
                     card.innerHTML = `
                         <h3>${sym.name}</h3>
-                        <div class="price">${price}</div>
-                        <div class="date">${date}</div>
+                        <div class="price">${priceStr}</div>
+                        ${changeHtml}
+                        <div class="date">${dateStr}</div>
                     `;
                     card.onclick = () => showChart(sym, data);
                     panel.appendChild(card);
@@ -90,26 +200,31 @@
             document.getElementById('chart-title').innerText = `${sym.name} 歷史趨勢`;
 
             const ctx = document.getElementById('myChart').getContext('2d');
-            
-            // 簡化數據，如果太多點只取最近 100 點
-            const plotData = data.slice(-100); 
+            const valField = sym.field || 'Close';
+            const dateField = sym.dateField || 'Date';
+
+            const plotData = data.slice(-100);
 
             if (chartInstance) chartInstance.destroy();
 
             chartInstance = new Chart(ctx, {
                 type: 'line',
                 data: {
-                    labels: plotData.map(d => new Date(d.Date).toLocaleDateString()),
+                    labels: plotData.map(d => new Date(d[dateField]).toLocaleDateString()),
                     datasets: [{
-                        label: 'Close Price',
-                        data: plotData.map(d => parseFloat(d.Close)),
+                        label: sym.name,
+                        data: plotData.map(d => parseFloat(d[valField])),
                         borderColor: '#3498db',
-                        tension: 0.1,
-                        fill: false
+                        backgroundColor: 'rgba(52, 152, 219, 0.1)',
+                        tension: 0.2,
+                        fill: true
                     }]
                 },
                 options: {
                     responsive: true,
+                    plugins: {
+                        legend: { display: false }
+                    },
                     interaction: { mode: 'index', intersect: false }
                 }
             });
@@ -123,4 +238,5 @@
         init();
     </script>
 </body>
+
 </html>
