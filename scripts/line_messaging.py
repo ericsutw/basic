@@ -80,7 +80,7 @@ class LineNotifier:
                     name = "黃金 (Gold)"
             else:
                 latest = self.currency_storage.get_latest_price(symbol)
-                if latest:
+                if latest is not None:
                     current_price = latest['Close']
                     df = self.currency_storage.load_data(symbol)
                     if len(df) > 1:
@@ -131,7 +131,7 @@ class LineNotifier:
         # 2. Currencies
         for code in ['USDTWD', 'USDVND', 'BTC']:
             latest = self.currency_storage.get_latest_price(code)
-            if latest:
+            if latest is not None:
                 price = latest['Close']
                 df = self.currency_storage.load_data(code)
                 change_str = ""
