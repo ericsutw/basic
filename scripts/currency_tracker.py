@@ -47,7 +47,7 @@ class CurrencyTracker:
                 df = yf.download(ticker, period="max", interval="1d", progress=False)
                 
                 if df.empty:
-                    print(f"  ❌ 無資料: {ticker}")
+                    print(f"  [NO DATA] 無資料: {ticker}")
                     continue
                 
                 # yfinance 回傳的 DataFrame 索引是 Date
@@ -60,10 +60,10 @@ class CurrencyTracker:
                 
                 count = len(df)
                 self.storage.save_data(code, df)
-                print(f"  ✅ 更新完成，共 {count} 筆資料")
+                print(f"  [OK] 更新完成，共 {count} 筆資料")
                 
             except Exception as e:
-                print(f"  ❌ 更新失敗: {e}")
+                print(f"  [ERROR] 更新失敗: {e}")
 
         # 2. 計算交叉匯率 NTD vs VND
         print(f"\n[NTDVND] 正在計算交叉匯率 NTD vs VND...")
@@ -72,7 +72,7 @@ class CurrencyTracker:
             df_vnd = self.storage.load_data('USDVND')
             
             if df_twd.empty or df_vnd.empty:
-                print("  ❌ 缺少 USDTWD 或 USDVND 資料，無法計算")
+                print("  [ERROR] 缺少 USDTWD 或 USDVND 資料，無法計算")
             else:
                 # 合併資料 (Inner Join by Date)
                 # load_data 回傳包含 Date 欄位的 DataFrame
@@ -89,10 +89,10 @@ class CurrencyTracker:
                 # 儲存
                 result = merged[['Date', 'Close']]
                 self.storage.save_data('NTDVND', result)
-                print(f"  ✅ 計算完成，共 {len(result)} 筆資料")
+                print(f"  [OK] 計算完成，共 {len(result)} 筆資料")
                 
         except Exception as e:
-            print(f"  ❌ 計算失敗: {e}")
+            print(f"  [ERROR] 計算失敗: {e}")
 
     def list_pairs(self):
         """列出所有幣別與最新價格"""
