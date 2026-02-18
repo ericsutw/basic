@@ -37,7 +37,16 @@ class CurrencyStorage:
             columns = ['Date', 'Open', 'High', 'Low', 'Close', 'Volume']
             # 過濾存在的欄位
             existing_cols = [c for c in columns if c in df.columns]
+            # 過濾存在的欄位
+            existing_cols = [c for c in columns if c in df.columns]
             df = df[existing_cols]
+            
+        # 移除 Close 為 NaN 的資料
+        if 'Close' in df.columns:
+            df = df.dropna(subset=['Close'])
+        
+        if df.empty:
+            return
             
         # 如果檔案存在，讀取並合併
         if file_path.exists():
