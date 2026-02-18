@@ -31,7 +31,14 @@ jobs:
           python scripts/currency_tracker.py update
           
           # 更新黃金資料
-          python scripts/gold_tracker.py update 
+          python scripts/gold_tracker.py update
+          
+      - name: Send Line Notification
+        env:
+          LINE_CHANNEL_ACCESS_TOKEN: ${{ secrets.LINE_CHANNEL_ACCESS_TOKEN }}
+          LINE_USER_ID: ${{ secrets.LINE_USER_ID }}
+        run: |
+          python scripts/line_messaging.py
 
       - name: Check for Changes
         id: check_changes

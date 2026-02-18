@@ -23,6 +23,12 @@
             "type": "fluctuation",
             "threshold_percent": 10.0,
             "period": "daily"
+        },
+        {
+            "symbol": "USDTWD",
+            "type": "price_target",
+            "target_price": 31.0,
+            "direction": "below"
         }
     ]
 }
