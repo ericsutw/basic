@@ -204,6 +204,24 @@ class GoldPriceStorage:
             'sell_price_range': (df['sell_price'].min(), df['sell_price'].max()) if 'sell_price' in df.columns else None
         }
 
+    def get_latest_price(self) -> Optional[dict]:
+        """
+        取得最新的黃金價格紀錄
+        
+        Returns:
+            最新的價格字典 {'date': ..., 'buy_price': ..., 'sell_price': ..., 'timestamp': ...}
+            如果沒有資料則回傳 None
+        """
+        df = self.load_data()
+        if df.empty:
+            return None
+        
+        # 確保按照日期排序，取最後一筆
+        df['date'] = pd.to_datetime(df['date'])
+        df = df.sort_values('date')
+        latest = df.iloc[-1].to_dict()
+        return latest
+
 
 if __name__ == '__main__':
     # 測試程式碼
