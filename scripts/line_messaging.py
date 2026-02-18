@@ -9,10 +9,17 @@ import json
 import sys
 import argparse
 from pathlib import Path
-from datetime import datetime
-from linebot import LineBotApi
-from linebot.models import TextSendMessage
-from linebot.exceptions import LineBotApiError
+
+from linebot.v3 import (
+    WebhookHandler
+)
+from linebot.v3.messaging import (
+    Configuration,
+    ApiClient,
+    MessagingApi,
+    PushMessageRequest,
+    TextMessage
+)
 
 # Add script directory to path
 sys.path.append(str(Path(__file__).parent))
@@ -27,9 +34,11 @@ class LineNotifier:
         
         if not self.channel_access_token or not self.user_id:
             print("Warning: LINE_CHANNEL_ACCESS_TOKEN or LINE_USER_ID not set.")
-            self.line_bot_api = None
+            self.messaging_api = None
         else:
-            self.line_bot_api = LineBotApi(self.channel_access_token)
+            configuration = Configuration(access_token=self.channel_access_token)
+            self.api_client = ApiClient(configuration)
+            self.messaging_api = MessagingApi(self.api_client)
             
         self.currency_storage = CurrencyStorage()
         self.gold_storage = GoldPriceStorage()
@@ -135,7 +144,7 @@ class LineNotifier:
         return "\n".join(summary_lines)
 
     def run(self, test_mode=False):
-        if not self.line_bot_api:
+        if not self.messaging_api:
             print("Skipping Line notification (No token)")
             return
 
@@ -157,9 +166,13 @@ class LineNotifier:
             return
 
         try:
-            self.line_bot_api.push_message(self.user_id, TextSendMessage(text=final_msg))
+            push_message_request = PushMessageRequest(
+                to=self.user_id,
+                messages=[TextMessage(text=final_msg)]
+            )
+            self.messaging_api.push_message(push_message_request)
             print("Successfully sent Line message.")
-        except LineBotApiError as e:
+        except Exception as e:
             print(f"Error sending Line message: {e}")
 
 def main():
