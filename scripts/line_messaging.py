@@ -83,6 +83,13 @@ class LineNotifier:
                 if latest is not None:
                     current_price = latest['Close']
                     df = self.currency_storage.load_data(symbol)
+                    
+                    # Debug log
+                    if symbol == 'USDTWD':
+                        print(f"[DEBUG] USDTWD Data Tail:\n{df.tail()}")
+                        print(f"[DEBUG] Latest Close Type: {type(current_price)}")
+                        print(f"[DEBUG] Latest Close Value: {current_price}")
+                        
                     if len(df) > 1:
                         prev_price = df.iloc[-2]['Close']
             

@@ -79,6 +79,7 @@ class CurrencyStorage:
             df = pd.read_csv(file_path)
             df['Date'] = pd.to_datetime(df['Date'])
             if 'Close' in df.columns:
+                df['Close'] = pd.to_numeric(df['Close'], errors='coerce')
                 df = df.dropna(subset=['Close'])
             return df
         except Exception:
