@@ -119,6 +119,25 @@ class LineNotifier:
 
         return messages
 
+    def format_change(self, price, prev_price):
+        if prev_price == 0:
+            return ""
+        
+        pct = ((price - prev_price) / prev_price) * 100
+        abs_pct = abs(pct)
+        
+        # Red Triangle for Up (Asian market convention users often prefer this)
+        # But user asked for Green Up / Red Down?
+        # Standard Emoji: 🔺 (Red Up), 🔻 (Red Down).
+        # We will use 🔺/🔻 and let the symbol indicate direction.
+        
+        if pct > 0:
+            return f"🔺 {abs_pct:.2f}%"
+        elif pct < 0:
+            return f"🔻 {abs_pct:.2f}%"
+        else:
+            return f"➖ {abs_pct:.2f}%"
+
     def send_daily_summary(self):
         """傳送每日行情摘要"""
         summary_lines = ["📊 每日行情摘要"]
@@ -131,8 +150,7 @@ class LineNotifier:
             change_str = ""
             if len(df) > 1:
                 prev = df.iloc[-2]['sell_price']
-                pct = ((price - prev) / prev) * 100
-                change_str = f"({pct:+.2f}%)"
+                change_str = self.format_change(price, prev)
             summary_lines.append(f"Gold: {price:,.0f} {change_str}")
             
         # 2. Currencies & Stocks
@@ -145,8 +163,7 @@ class LineNotifier:
                 change_str = ""
                 if len(df) > 1:
                     prev = df.iloc[-2]['Close']
-                    pct = ((price - prev) / prev) * 100
-                    change_str = f"({pct:+.2f}%)"
+                    change_str = self.format_change(price, prev)
                 summary_lines.append(f"{code}: {price:,.2f} {change_str}")
 
         return "\n".join(summary_lines)
