@@ -9,16 +9,16 @@ if ($LASTEXITCODE -ne 0) {
     exit 1
 }
 
-# 2. Git Sync
-Write-Host "Syncing with remote..."
-git pull --rebase origin main
-
-# 3. Add & Commit
+# 2. Add & Commit (Commit local changes first to allow rebase)
 Write-Host "Staging changes..."
 git add .
 $timestamp = Get-Date -Format "yyyy-MM-dd HH:mm"
 $commitMsg = "Update: $timestamp"
 git commit -m "$commitMsg"
+
+# 3. Git Sync
+Write-Host "Syncing with remote..."
+git pull --rebase origin main
 
 # 4. Push
 Write-Host "Pushing to GitHub..."

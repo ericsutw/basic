@@ -2,7 +2,11 @@ name: Daily Update
 
 on:
   schedule:
-    - cron: '0 0 * * *'  # 每天 UTC 0:00 (台灣時間 8:00) 執行
+    # Vietnam Time (UTC+7): 09:00, 11:50, 16:00
+    # UTC: 02:00, 04:50, 09:00
+    - cron: '0 2 * * *'
+    - cron: '50 4 * * *'
+    - cron: '0 9 * * *'
   workflow_dispatch:      # 允許手動觸發
 
 jobs:
