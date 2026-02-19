@@ -22,6 +22,10 @@ CURRENCY_PAIRS = {
     'BTC': {'ticker': 'BTC-USD', 'name': 'Bitcoin (BTC) vs USD'},
     'USDTWD': {'ticker': 'TWD=X', 'name': 'USD vs NTD (TWD)'},
     'USDVND': {'ticker': 'VND=X', 'name': 'USD vs VND'},
+    'TSMC': {'ticker': '2330.TW', 'name': 'TSMC (2330)'},
+    'UMC': {'ticker': '2303.TW', 'name': 'UMC (2303)'},
+    'Creative': {'ticker': '3443.TW', 'name': 'Creative (3443)'},
+    'IntlGold': {'ticker': 'GC=F', 'name': 'Intl Gold (USD/oz)'},
     'NTDVND': {'ticker': 'CALCULATED', 'name': 'NTD vs VND (Cross Rate)'}
 }
 
@@ -57,6 +61,10 @@ class CurrencyTracker:
                 
                 # 注意：yf.download 在新版可能回傳 MultiIndex columns (如果抓多個)
                 # 這裡只抓一個，應該是單層 Index
+                
+                # Flatten MultiIndex columns (yfinance > 0.2.x)
+                if isinstance(df.columns, pd.MultiIndex):
+                    df.columns = df.columns.droplevel(1)
                 
                 count = len(df)
                 self.storage.save_data(code, df)

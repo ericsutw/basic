@@ -135,8 +135,9 @@ class LineNotifier:
                 change_str = f"({pct:+.2f}%)"
             summary_lines.append(f"Gold: {price:,.0f} {change_str}")
             
-        # 2. Currencies
-        for code in ['USDTWD', 'USDVND', 'BTC']:
+        # 2. Currencies & Stocks
+        symbols = ['USDTWD', 'USDVND', 'BTC', 'TSMC', 'UMC', 'Creative', 'IntlGold']
+        for code in symbols:
             latest = self.currency_storage.get_latest_price(code)
             if latest is not None:
                 price = latest['Close']
