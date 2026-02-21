@@ -16,6 +16,7 @@ sys.path.append(str(Path(__file__).parent))
 
 from currency_storage import CurrencyStorage
 from currency_visualizer import CurrencyVisualizer
+from market_utils import is_taiwan_market_open
 
 # 定義支援的幣別與 yfinance 代碼
 CURRENCY_PAIRS = {
@@ -42,6 +43,11 @@ class CurrencyTracker:
         for code, info in CURRENCY_PAIRS.items():
             ticker = info['ticker']
             if ticker == 'CALCULATED':
+                continue
+            
+            # 檢查市場交易時段
+            if not is_taiwan_market_open(code):
+                print(f"[{code}] 非交易時段，跳過更新...")
                 continue
                 
             print(f"[{code}] 正在抓取 {ticker} ({info['name']})...")

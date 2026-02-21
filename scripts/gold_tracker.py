@@ -136,6 +136,11 @@ class GoldTracker:
         """
         更新最新資料（抓取今天的價格）
         """
+        from market_utils import is_taiwan_market_open
+        if not is_taiwan_market_open('Gold'):
+            print("\n[Gold] 非台銀營業時段 (09:00-15:30)，跳過更新...")
+            return
+
         print("\n更新最新資料...")
         try:
             latest = self.scraper.get_latest_price(wait_if_needed=True)
