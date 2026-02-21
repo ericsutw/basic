@@ -4,6 +4,8 @@ on:
   schedule:
     # 每 30 分鐘執行一次以檢查異常變動 (Abnormality Check)
     - cron: '*/30 * * * *'
+    # 確保能在 11:50 ICT (04:50 UTC) 準時發送午間總表
+    - cron: '50 4 * * *'
   workflow_dispatch:      # 允許手動觸發
 
 jobs:

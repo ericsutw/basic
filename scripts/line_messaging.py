@@ -203,20 +203,59 @@ class LineNotifier:
 
         return "\n".join(summary_lines)
 
+    def should_send_summary(self):
+        """判斷是否該發送每日總表 (1天3次: 09:00, 11:50, 16:00 ICT)"""
+        # 目標時間 (UTC): 02:00, 04:50, 09:00
+        from datetime import datetime
+        now = datetime.utcnow()
+        today_str = now.strftime('%Y-%m-%d')
+        
+        # 轉換成當天的目標時間
+        target_times = {
+            'morning': now.replace(hour=2, minute=0, second=0, microsecond=0),
+            'noon': now.replace(hour=4, minute=50, second=0, microsecond=0),
+            'afternoon': now.replace(hour=9, minute=0, second=0, microsecond=0)
+        }
+        
+        # 依照時間先後順序檢查，確保我們檢查到最近的一個時間點
+        for slot, target_time in target_times.items():
+            state_key = f"summary_sent_{slot}"
+            # 如果現在超過「目標時間」，且今天還沒發過
+            if now >= target_time:
+                if self.alert_state.get(state_key) != today_str:
+                    # 更新狀態並同意發送
+                    self.alert_state[state_key] = today_str
+                    self.save_state()
+                    return True
+        return False
+
     def run(self, test_mode=False):
         if not self.messaging_api:
             print("Skipping Line notification (No token)")
             return
 
-        # 1. Check Alerts
+        # 1. Check Alerts (靜默巡邏)
         alert_msgs = self.check_alerts()
         
-        # 2. Daily Summary
-        summary_msg = self.send_daily_summary()
+        # 2. Daily Summary (定時發送)
+        summary_msg = ""
+        # 測試模式下強迫發送總表以供驗證，或是達到指定時間才發送
+        if test_mode or self.should_send_summary():
+            summary_msg = self.send_daily_summary()
+            
+        # 決定是否發出 Line 通知
+        if not alert_msgs and not summary_msg:
+            print("🔕 靜默巡邏模式：沒有異常變動，也尚未到達總表發布時間。")
+            return
         
-        final_msg = summary_msg
+        final_msg = ""
+        if summary_msg:
+            final_msg = summary_msg
+            
         if alert_msgs:
-            final_msg += "\n\n⚠️ 觸發警報:\n" + "\n".join(alert_msgs)
+            if final_msg:
+                final_msg += "\n\n"
+            final_msg += "⚠️ 觸發警報:\n" + "\n".join(alert_msgs)
             
         print("Prepare to send message:")
         print(final_msg)
