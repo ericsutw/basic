@@ -29,8 +29,12 @@ class CurrencyStorage:
         file_path = self.get_file_path(symbol)
         
         # 確保 Date 是索引或是欄位
-        if 'Date' not in df.columns and df.index.name == 'Date':
-            df = df.reset_index()
+        if 'Date' not in df.columns:
+            if df.index.name in ['Date', 'Datetime']:
+                df = df.reset_index().rename(columns={df.index.name: 'Date'})
+            elif not df.empty and not isinstance(df.index, pd.RangeIndex):
+                # 如果是其他時間序列索引，也嘗試重置
+                df = df.reset_index().rename(columns={df.index.name: 'Date'})
             
         # 只保留需要的欄位
         if 'Close' in df.columns:
@@ -61,6 +65,30 @@ class CurrencyStorage:
                 # 合併並去重
                 combined = pd.concat([old_df, df]).drop_duplicates(subset=['Date'], keep='last')
                 combined = combined.sort_values('Date')
+                
+                # --- 資料清理邏輯 (Cleanup Logic) ---
+                # 清除超過 3 天以前的即時價格，每個日期僅保留最後一筆
+                # 確保使用的是 UTC 時間進行比較
+                now_utc = pd.Timestamp.now(tz='UTC')
+                cutoff_date = now_utc - pd.Timedelta(days=3)
+                
+                # 確保 Date 是 UTC
+                combined['Date'] = pd.to_datetime(combined['Date'], utc=True)
+                
+                # 區分「近期資料」(3天內) 與「歷史資料」(超過3天)
+                recent_mask = combined['Date'] >= cutoff_date
+                recent_data = combined[recent_mask]
+                old_data = combined[~recent_mask]
+                
+                if not old_data.empty:
+                    # 對舊資料按日期分組，僅保留每天的最後一筆 (收盤)
+                    # 建立暫時日期欄位
+                    temp_dates = old_data['Date'].dt.date
+                    old_data = old_data.assign(Date_Day=temp_dates).sort_values('Date').groupby('Date_Day').tail(1)
+                    old_data = old_data.drop(columns=['Date_Day'])
+                
+                combined = pd.concat([old_data, recent_data]).sort_values('Date').drop_duplicates(subset=['Date'], keep='last')
+                # -----------------------------------
                 
                 combined.to_csv(file_path, index=False, encoding='utf-8-sig')
             except Exception as e:

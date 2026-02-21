@@ -4,25 +4,35 @@
             "symbol": "Gold",
             "type": "fluctuation",
             "threshold_percent": 10.0,
-            "period": "daily"
+            "abnormality_threshold": 2.0
         },
         {
-            "symbol": "BTC-USD",
+            "symbol": "BTC",
             "type": "fluctuation",
             "threshold_percent": 10.0,
-            "period": "daily"
+            "abnormality_threshold": 2.0
         },
         {
             "symbol": "USDTWD",
             "type": "fluctuation",
             "threshold_percent": 10.0,
-            "period": "daily"
+            "abnormality_threshold": 2.0
         },
         {
             "symbol": "USDVND",
             "type": "fluctuation",
             "threshold_percent": 10.0,
-            "period": "daily"
+            "abnormality_threshold": 2.0
+        },
+        {
+            "symbol": "IntlGold",
+            "type": "fluctuation",
+            "abnormality_threshold": 2.0
+        },
+        {
+            "symbol": "TSMC",
+            "type": "fluctuation",
+            "abnormality_threshold": 2.0
         },
         {
             "symbol": "USDTWD",

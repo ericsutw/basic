@@ -84,27 +84,25 @@ class LineNotifier:
                     current_price = latest['Close']
                     df = self.currency_storage.load_data(symbol)
                     
-                    # Debug log
-                    if symbol == 'USDTWD':
-                        print(f"[DEBUG] USDTWD Data Tail:\n{df.tail()}")
-                        print(f"[DEBUG] Latest Close Type: {type(current_price)}")
-                        print(f"[DEBUG] Latest Close Value: {current_price}")
-                        
                     if len(df) > 1:
+                        # 取得前一筆資料進行異常偵測 (15分鐘前)
                         prev_price = df.iloc[-2]['Close']
             
-            if current_price == 0:
+            if current_price == 0 or prev_price == 0:
                 continue
                 
-            # Check fluctuation
-            if alert_type == 'fluctuation' and prev_price > 0:
-                change_pct = ((current_price - prev_price) / prev_price) * 100
-                if abs(change_pct) >= threshold:
-                    trend = "📈 大漲" if change_pct > 0 else "📉 大跌"
-                    msg = f"{trend} {name}: {current_price:,.2f} ({change_pct:+.2f}%)"
-                    messages.append(msg)
-                    
-            # Check price target
+            # Check abnormality flag (User request: >2% change between sequences)
+            # Fetch individual threshold from alert config or default to 2.0
+            alert_threshold = alert.get('abnormality_threshold', 2.0)
+            
+            change_pct = ((current_price - prev_price) / prev_price) * 100
+            if abs(change_pct) >= alert_threshold:
+                trend = "🚨 異常變動"
+                indicator = "📈" if change_pct > 0 else "📉"
+                msg = f"{trend} {name}: {current_price:,.2f} {indicator} {abs(change_pct):.2f}% (相較於前次報價)"
+                messages.append(msg)
+                
+            # Check price target alert (Existing logic)
             if alert_type == 'price_target' and target_price:
                 hit = False
                 if direction == 'above' and current_price >= target_price:

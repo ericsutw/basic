@@ -46,21 +46,16 @@ class CurrencyTracker:
                 
             print(f"[{code}] 正在抓取 {ticker} ({info['name']})...")
             try:
-                # 抓取最大可用歷史資料 (Yahoo Finance max)
-                # auto_adjust=True 會自動調整股價
-                df = yf.download(ticker, period="max", interval="1d", progress=False)
+                # 抓取最近 7 天的 15 分鐘 K 線資料 (Intraday alerts)
+                df = yf.download(ticker, period="7d", interval="15m", progress=False)
+                
+                if df.empty:
+                    # 如果 15m 沒資料，嘗試抓取 1d (歷史備援)
+                    df = yf.download(ticker, period="max", interval="1d", progress=False)
                 
                 if df.empty:
                     print(f"  [NO DATA] 無資料: {ticker}")
                     continue
-                
-                # yfinance 回傳的 DataFrame 索引是 Date
-                # 欄位通常是 Open, High, Low, Close, Adj Close, Volume
-                # 我們需要重置索引變成欄位，或者 storage 會處理
-                # storage.save_data 會處理 index.name == 'Date'
-                
-                # 注意：yf.download 在新版可能回傳 MultiIndex columns (如果抓多個)
-                # 這裡只抓一個，應該是單層 Index
                 
                 # Flatten MultiIndex columns (yfinance > 0.2.x)
                 if isinstance(df.columns, pd.MultiIndex):
@@ -68,7 +63,7 @@ class CurrencyTracker:
                 
                 count = len(df)
                 self.storage.save_data(code, df)
-                print(f"  [OK] 更新完成，共 {count} 筆資料")
+                print(f"  [OK] 更新完成，共 {count} 筆資料 (15m interval)")
                 
             except Exception as e:
                 print(f"  [ERROR] 更新失敗: {e}")
@@ -82,16 +77,23 @@ class CurrencyTracker:
             if df_twd.empty or df_vnd.empty:
                 print("  [ERROR] 缺少 USDTWD 或 USDVND 資料，無法計算")
             else:
+                # 確保 Date 是 datetime 格式並轉為 UTC 進行對齊
+                df_twd['Date'] = pd.to_datetime(df_twd['Date'], utc=True)
+                df_vnd['Date'] = pd.to_datetime(df_vnd['Date'], utc=True)
+                
                 # 合併資料 (Inner Join by Date)
-                # load_data 回傳包含 Date 欄位的 DataFrame
                 merged = pd.merge(df_twd[['Date', 'Close']], df_vnd[['Date', 'Close']], 
                                  on='Date', how='inner', suffixes=('_TWD', '_VND'))
                 
+                if merged.empty:
+                    print("  [WARN] 合併後無重疊時間點，嘗試依日期對稱 (Asof Join)...")
+                    # 如果 15m 時間點沒對上，可以用 asof join
+                    df_twd = df_twd.sort_values('Date')
+                    df_vnd = df_vnd.sort_values('Date')
+                    merged = pd.merge_asof(df_twd[['Date', 'Close']], df_vnd[['Date', 'Close']],
+                                         on='Date', suffixes=('_TWD', '_VND'))
+
                 # 計算 1 TWD = ? VND
-                # USD/VND = V
-                # USD/TWD = T
-                # 1 USD = V VND, 1 USD = T TWD
-                # T TWD = V VND => 1 TWD = V/T VND
                 merged['Close'] = merged['Close_VND'] / merged['Close_TWD']
                 
                 # 儲存

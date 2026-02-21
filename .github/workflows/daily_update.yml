@@ -2,11 +2,8 @@ name: Daily Update
 
 on:
   schedule:
-    # Vietnam Time (UTC+7): 09:00, 11:50, 16:00
-    # UTC: 02:00, 04:50, 09:00
-    - cron: '0 2 * * *'
-    - cron: '50 4 * * *'
-    - cron: '0 9 * * *'
+    # 每 30 分鐘執行一次以檢查異常變動 (Abnormality Check)
+    - cron: '*/30 * * * *'
   workflow_dispatch:      # 允許手動觸發
 
 jobs:
