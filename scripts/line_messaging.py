@@ -43,7 +43,27 @@ class LineNotifier:
         self.currency_storage = CurrencyStorage()
         self.gold_storage = GoldPriceStorage()
         self.alerts_file = Path('data/alerts.json')
+        self.state_file = Path('data/alert_state.json')
+        self.alert_state = self.load_state()
         
+    def load_state(self):
+        if not self.state_file.exists():
+            return {}
+        try:
+            with open(self.state_file, 'r', encoding='utf-8') as f:
+                return json.load(f)
+        except Exception:
+            return {}
+
+    def save_state(self):
+        try:
+            # Create data dir if not exists
+            self.state_file.parent.mkdir(parents=True, exist_ok=True)
+            with open(self.state_file, 'w', encoding='utf-8') as f:
+                json.dump(self.alert_state, f, indent=4)
+        except Exception as e:
+            print(f"Error saving alert state: {e}")
+
     def load_alerts(self):
         if not self.alerts_file.exists():
             return []
@@ -67,12 +87,14 @@ class LineNotifier:
             current_price = 0
             prev_price = 0
             name = symbol
+            last_timestamp = ""
             
             # Fetch data based on symbol
             if symbol == 'Gold':
                 stats = self.gold_storage.get_latest_price()
                 if stats:
                     current_price = stats['sell_price']
+                    last_timestamp = str(stats.get('date', ''))
                     # Get previous price
                     df = self.gold_storage.load_data()
                     if len(df) > 1:
@@ -82,25 +104,34 @@ class LineNotifier:
                 latest = self.currency_storage.get_latest_price(symbol)
                 if latest is not None:
                     current_price = latest['Close']
+                    last_timestamp = str(latest.get('Date', ''))
                     df = self.currency_storage.load_data(symbol)
                     
                     if len(df) > 1:
                         # 取得前一筆資料進行異常偵測 (15分鐘前)
                         prev_price = df.iloc[-2]['Close']
             
-            if current_price == 0 or prev_price == 0:
+            if current_price == 0 or prev_price == 0 or not last_timestamp:
+                continue
+
+            # --- 重複警報抑制 (Alert Suppression) ---
+            state_key = f"{symbol}_{alert_type}"
+            if self.alert_state.get(state_key) == last_timestamp:
+                # 已經通知過了，跳過
                 continue
                 
             # Check abnormality flag (User request: >2% change between sequences)
             # Fetch individual threshold from alert config or default to 2.0
             alert_threshold = alert.get('abnormality_threshold', 2.0)
             
+            triggered = False
             change_pct = ((current_price - prev_price) / prev_price) * 100
             if abs(change_pct) >= alert_threshold:
                 trend = "🚨 異常變動"
                 indicator = "📈" if change_pct > 0 else "📉"
                 msg = f"{trend} {name}: {current_price:,.2f} {indicator} {abs(change_pct):.2f}% (相較於前次報價)"
                 messages.append(msg)
+                triggered = True
                 
             # Check price target alert (Existing logic)
             if alert_type == 'price_target' and target_price:
@@ -114,6 +145,12 @@ class LineNotifier:
                 
                 if hit:
                     messages.append(msg)
+                    triggered = True
+
+            # 如果這次有觸發任何警報，更新狀態
+            if triggered:
+                self.alert_state[state_key] = last_timestamp
+                self.save_state()
 
         return messages
 
