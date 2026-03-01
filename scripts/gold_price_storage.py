@@ -12,14 +12,20 @@ from typing import Optional, List, Tuple
 
 
 class GoldPriceStorage:
-    def __init__(self, data_dir: str = "data"):
+    def __init__(self, data_dir: str = None):
         """
         初始化儲存模組
         
         Args:
             data_dir: 資料目錄路徑
         """
-        self.data_dir = Path(data_dir)
+        if data_dir is None:
+            # 預設為專案根目錄下的 data 資料夾
+            base_dir = Path(__file__).parent.parent
+            self.data_dir = base_dir / "data"
+        else:
+            self.data_dir = Path(data_dir)
+            
         self.data_file = self.data_dir / "gold_prices.csv"
         self.backup_file = self.data_dir / "gold_prices_backup.csv"
         

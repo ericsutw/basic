@@ -42,8 +42,10 @@ class LineNotifier:
             
         self.currency_storage = CurrencyStorage()
         self.gold_storage = GoldPriceStorage()
-        self.alerts_file = Path('data/alerts.json')
-        self.state_file = Path('data/alert_state.json')
+        
+        base_dir = Path(__file__).parent.parent
+        self.alerts_file = base_dir / 'data' / 'alerts.json'
+        self.state_file = base_dir / 'data' / 'alert_state.json'
         self.alert_state = self.load_state()
         
     def load_state(self):
@@ -181,12 +183,13 @@ class LineNotifier:
         gold_stats = self.gold_storage.get_latest_price()
         if gold_stats:
             price = gold_stats['sell_price']
+            date_str = str(gold_stats['date'])[:10][-5:].replace('-', '/')
             df = self.gold_storage.load_data()
             change_str = ""
             if len(df) > 1:
                 prev = df.iloc[-2]['sell_price']
                 change_str = self.format_change(price, prev)
-            summary_lines.append(f"Gold: {price:,.0f} {change_str}")
+            summary_lines.append(f"Gold ({date_str}): {price:,.0f} {change_str}")
             
         # 2. Currencies & Stocks
         symbols = ['USDTWD', 'USDVND', 'BTC', 'TSMC', 'UMC', 'Creative', 'IntlGold']
@@ -194,12 +197,13 @@ class LineNotifier:
             latest = self.currency_storage.get_latest_price(code)
             if latest is not None:
                 price = latest['Close']
+                date_str = str(latest.get('Date', ''))[:10][-5:].replace('-', '/')
                 df = self.currency_storage.load_data(code)
                 change_str = ""
                 if len(df) > 1:
                     prev = df.iloc[-2]['Close']
                     change_str = self.format_change(price, prev)
-                summary_lines.append(f"{code}: {price:,.2f} {change_str}")
+                summary_lines.append(f"{code} ({date_str}): {price:,.2f} {change_str}")
 
         return "\n".join(summary_lines)
 

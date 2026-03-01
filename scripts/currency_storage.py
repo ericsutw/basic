@@ -4,13 +4,18 @@ from datetime import datetime
 import os
 
 class CurrencyStorage:
-    def __init__(self, data_dir: str = "data/currency"):
+    def __init__(self, data_dir: str = None):
         """
         初始化匯率資料儲存
         Args:
             data_dir: 資料儲存目錄
         """
-        self.data_dir = Path(data_dir)
+        if data_dir is None:
+            base_dir = Path(__file__).parent.parent
+            self.data_dir = base_dir / "data" / "currency"
+        else:
+            self.data_dir = Path(data_dir)
+            
         self.data_dir.mkdir(parents=True, exist_ok=True)
 
     def get_file_path(self, symbol: str) -> Path:
