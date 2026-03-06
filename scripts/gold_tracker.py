@@ -134,33 +134,28 @@ class GoldTracker:
     
     def update(self):
         """
-        更新最新資料（抓取今天的價格）
+        更新最新資料（包含最近一週的補摺）
         """
-        from market_utils import is_taiwan_market_open
-        if not is_taiwan_market_open('Gold'):
-            print("\n[Gold] 非台銀營業時段 (09:00-15:30)，跳過更新...")
-            return
-
-        print("\n更新最新資料...")
+        # 對於黃金價格，我們總是嘗試執行「智能補摺」，因為歷史資料查詢不受營業時間限制。
+        # 只有在需要獲取「當前即時價」且不想對伺服器造成額外負擔時才檢查營業時間。
+        # 這裡我們預設執行最近 7 天的智能抓取。
+        
+        print("\n檢查並更新最近 7 天的資料...")
         try:
-            latest = self.scraper.get_latest_price(wait_if_needed=True)
-            if latest:
-                print(f"\n最新黃金價格 ({latest['date'].date()}):")
-                print(f"  買入價: {latest['buy_price']:.2f} 元/公克")
-                print(f"  賣出價: {latest['sell_price']:.2f} 元/公克")
-                print(f"  價差: {latest['sell_price'] - latest['buy_price']:.2f} 元/公克")
-                
-                # 儲存到本地
-                import pandas as pd
-                df = pd.DataFrame([latest])
-                self.storage.merge_and_save(df)
-                print("\n✓ 已更新到本地資料")
+            # 執行一個短期的 fetch (智能模式會自動略過已存在的日期)
+            success = self.fetch(
+                start_date=datetime.now() - timedelta(days=7),
+                end_date=datetime.now(),
+                force=False
+            )
+            
+            if success:
+                print("\n✓ 黃金價格資料更新完成")
             else:
-                print("\n✗ 無法取得最新價格")
-        except RateLimitError as e:
-            print(f"\n✗ 錯誤: {e}")
+                print("\n✗ 黃金價格資料更新失敗")
+                
         except Exception as e:
-            print(f"\n✗ 發生錯誤: {e}")
+            print(f"\n✗ 更新過程中發生錯誤: {e}")
 
 
 def main():
