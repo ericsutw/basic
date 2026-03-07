@@ -8,6 +8,8 @@ import os
 import json
 import sys
 import argparse
+import pytz
+from datetime import datetime
 from pathlib import Path
 
 from linebot.v3 import (
@@ -177,19 +179,29 @@ class LineNotifier:
 
     def send_daily_summary(self):
         """傳送每日行情摘要"""
+        # 取得台北目前日期 MM/DD
+        tpe_tz = pytz.timezone('Asia/Taipei')
+        now_tpe = datetime.now(tpe_tz)
+        today_val = now_tpe.strftime('%m/%d')
+        
         summary_lines = ["📊 每日行情摘要"]
         
         # 1. Gold
         gold_stats = self.gold_storage.get_latest_price()
         if gold_stats:
             price = gold_stats['sell_price']
+            # 格式化日期為 MM/DD
             date_str = str(gold_stats['date'])[:10][-5:].replace('-', '/')
+            
+            # 如果日期是今天，則不顯示日期，否則顯示 (MM/DD)
+            display_date = f" ({date_str})" if date_str != today_val else ""
+            
             df = self.gold_storage.load_data()
             change_str = ""
             if len(df) > 1:
                 prev = df.iloc[-2]['sell_price']
                 change_str = self.format_change(price, prev)
-            summary_lines.append(f"Gold ({date_str}): {price:,.0f} {change_str}")
+            summary_lines.append(f"Gold{display_date}: {price:,.0f} {change_str}")
             
         # 2. Currencies & Stocks
         symbols = ['USDTWD', 'USDVND', 'BTC', 'TSMC', 'UMC', 'Creative', 'IntlGold']
@@ -197,20 +209,24 @@ class LineNotifier:
             latest = self.currency_storage.get_latest_price(code)
             if latest is not None:
                 price = latest['Close']
+                # 格式化日期為 MM/DD
                 date_str = str(latest.get('Date', ''))[:10][-5:].replace('-', '/')
+                
+                # 如果日期是今天，則不顯示日期，否則顯示 (MM/DD)
+                display_date = f" ({date_str})" if date_str != today_val else ""
+                
                 df = self.currency_storage.load_data(code)
                 change_str = ""
                 if len(df) > 1:
                     prev = df.iloc[-2]['Close']
                     change_str = self.format_change(price, prev)
-                summary_lines.append(f"{code} ({date_str}): {price:,.2f} {change_str}")
+                summary_lines.append(f"{code}{display_date}: {price:,.2f} {change_str}")
 
         return "\n".join(summary_lines)
 
     def should_send_summary(self):
         """判斷是否該發送每日總表 (1天3次: 09:00, 11:50, 16:00 ICT)"""
         # 目標時間 (UTC): 02:00, 04:50, 09:00
-        from datetime import datetime
         now = datetime.utcnow()
         today_str = now.strftime('%Y-%m-%d')
         
