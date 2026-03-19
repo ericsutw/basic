@@ -158,6 +158,38 @@ class LineNotifier:
 
         return messages
 
+    def get_previous_day_close(self, df, current_date_str):
+        import pandas as pd
+        if df.empty or len(df) <= 1:
+            return 0
+            
+        df = df.copy()
+        df['Date'] = pd.to_datetime(df['Date'])
+        tpe_tz = pytz.timezone('Asia/Taipei')
+        
+        # Convert df dates to Taipei time
+        if df['Date'].dt.tz is None:
+            df['Date'] = df['Date'].dt.tz_localize('UTC').dt.tz_convert(tpe_tz)
+        else:
+            df['Date'] = df['Date'].dt.tz_convert(tpe_tz)
+            
+        # Convert current_date to Taipei time
+        current_date_obj = pd.to_datetime(current_date_str)
+        if current_date_obj.tz is None:
+            current_date_obj = current_date_obj.tz_localize('UTC').astimezone(tpe_tz)
+        else:
+            current_date_obj = current_date_obj.astimezone(tpe_tz)
+            
+        latest_local_date = current_date_obj.date()
+        
+        # Filter for dates strictly before the current local date
+        prev_days_df = df[df['Date'].dt.date < latest_local_date]
+        if prev_days_df.empty:
+            # Fallback to the previous row if no previous day exists
+            return df.iloc[-2]['Close']
+            
+        return prev_days_df.iloc[-1]['Close']
+
     def format_change(self, price, prev_price):
         if prev_price == 0:
             return ""
@@ -218,7 +250,7 @@ class LineNotifier:
                 df = self.currency_storage.load_data(code)
                 change_str = ""
                 if len(df) > 1:
-                    prev = df.iloc[-2]['Close']
+                    prev = self.get_previous_day_close(df, latest.get('Date', ''))
                     change_str = self.format_change(price, prev)
                 summary_lines.append(f"{code}{display_date}: {price:,.2f} {change_str}")
 
