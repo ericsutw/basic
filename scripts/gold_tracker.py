@@ -134,17 +134,30 @@ class GoldTracker:
     
     def update(self):
         """
-        更新最新資料（包含最近一週的補摺）
+        更新最新資料（自動補齊自上次更新以來的缺失資料）
         """
-        # 對於黃金價格，我們總是嘗試執行「智能補摺」，因為歷史資料查詢不受營業時間限制。
-        # 只有在需要獲取「當前即時價」且不想對伺服器造成額外負擔時才檢查營業時間。
-        # 這裡我們預設執行最近 7 天的智能抓取。
-        
-        print("\n檢查並更新最近 7 天的資料...")
+        print("\n檢查並更新黃金價格資料...")
         try:
-            # 執行一個短期的 fetch (智能模式會自動略過已存在的日期)
+            # 取得本地最新資料日期，避免漏掉長時間未更新的資料
+            latest_price = self.storage.get_latest_price()
+            if latest_price and 'date' in latest_price:
+                latest_date = latest_price['date']
+                if hasattr(latest_date, 'to_pydatetime'):
+                    start_date = latest_date.to_pydatetime()
+                elif isinstance(latest_date, str):
+                    start_date = datetime.strptime(latest_date[:10], '%Y-%m-%d')
+                else:
+                    start_date = latest_date
+                # 往回推 1 天以確保資料完整性
+                start_date = start_date - timedelta(days=1)
+                print(f"本地最新資料日期: {latest_date}，開始更新起點為: {start_date.date()}")
+            else:
+                start_date = datetime.now() - timedelta(days=30)
+                print(f"本地無黃金資料，預設更新起點為: {start_date.date()}")
+            
+            # 執行 fetch (智能模式會自動略過已存在的日期)
             success = self.fetch(
-                start_date=datetime.now() - timedelta(days=7),
+                start_date=start_date,
                 end_date=datetime.now(),
                 force=False
             )
