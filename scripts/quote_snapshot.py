@@ -27,6 +27,7 @@ SUMMARY_SYMBOLS = [
     "TSMC",
     "UMC",
     "Creative",
+    "SPG",
     "IntlGold",
 ]
 REQUIRED_SYMBOLS = SUMMARY_SYMBOLS + ["NTDVND"]
@@ -42,6 +43,7 @@ QUOTE_META = {
     "TSMC": {"timezone": "UTC", "source": "Yahoo Finance 2330.TW"},
     "UMC": {"timezone": "UTC", "source": "Yahoo Finance 2303.TW"},
     "Creative": {"timezone": "UTC", "source": "Yahoo Finance 3443.TW"},
+    "SPG": {"timezone": "Asia/Taipei", "source": "Yahoo Finance 6768.TW"},
     "IntlGold": {"timezone": "UTC", "source": "Yahoo Finance GC=F"},
     "NTDVND": {"timezone": "UTC", "source": "Cross rate USDVND / USDTWD"},
 }
@@ -78,7 +80,7 @@ def is_stale(symbol, quote_ts, now=None):
     age = now - quote_ts.tz_convert(UTC)
     if symbol == "Gold":
         return age > pd.Timedelta(days=10)
-    if symbol in ("TSMC", "UMC", "Creative"):
+    if symbol in ("TSMC", "UMC", "Creative", "SPG"):
         return age > pd.Timedelta(days=5)
     if symbol == "BTC":
         return age > pd.Timedelta(hours=6)

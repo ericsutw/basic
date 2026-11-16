@@ -1,5 +1,5 @@
 {
-  "generated_at": "2026-11-16T15:07:27.582940+08:00",
+  "generated_at": "2026-11-16T15:16:25.874812+08:00",
   "quotes": {
     "Gold": {
       "price": 4049.0,
@@ -13,10 +13,10 @@
       "sell_price": 4095.0
     },
     "USDTWD": {
-      "price": 32.96699905395508,
+      "price": 32.972999572753906,
       "previous_close": 32.875,
-      "change_percent": 0.279845,
-      "quote_timestamp": "2026-11-16T07:00:00+00:00",
+      "change_percent": 0.298098,
+      "quote_timestamp": "2026-11-16T07:15:00+00:00",
       "timezone": "UTC",
       "source": "Yahoo Finance TWD=X",
       "stale": false
@@ -31,10 +31,10 @@
       "stale": false
     },
     "BTC": {
-      "price": 64745.23046875,
+      "price": 64452.58984375,
       "previous_close": 64705.73046875,
-      "change_percent": 0.061046,
-      "quote_timestamp": "2026-11-16T07:00:00+00:00",
+      "change_percent": -0.391218,
+      "quote_timestamp": "2026-11-16T07:15:00+00:00",
       "timezone": "UTC",
       "source": "Yahoo Finance BTC-USD",
       "stale": false
@@ -66,11 +66,20 @@
       "source": "Yahoo Finance 3443.TW",
       "stale": false
     },
+    "SPG": {
+      "price": 60.900001525878906,
+      "previous_close": 61.099998474121094,
+      "change_percent": -0.327327,
+      "quote_timestamp": "2026-11-16T13:15:00+08:00",
+      "timezone": "Asia/Taipei",
+      "source": "Yahoo Finance 6768.TW",
+      "stale": false
+    },
     "IntlGold": {
-      "price": 3848.60009765625,
+      "price": 3858.699951171875,
       "previous_close": 3886.300048828125,
-      "change_percent": -0.970073,
-      "quote_timestamp": "2026-11-16T06:45:00+00:00",
+      "change_percent": -0.71019,
+      "quote_timestamp": "2026-11-16T07:00:00+00:00",
       "timezone": "UTC",
       "source": "Yahoo Finance GC=F",
       "stale": false

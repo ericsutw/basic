@@ -35,6 +35,11 @@
             "abnormality_threshold": 2.0
         },
         {
+            "symbol": "SPG",
+            "type": "fluctuation",
+            "abnormality_threshold": 2.0
+        },
+        {
             "symbol": "USDTWD",
             "type": "price_target",
             "target_price": 31.0,

@@ -6,7 +6,7 @@ def is_taiwan_market_open(symbol: str) -> bool:
     檢查台灣市場是否在營業時段內
     
     時段限制：
-    - 台股 (TSMC, UMC, Creative): 09:00 - 13:30
+    - 台股 (TSMC, UMC, Creative, SPG): 09:00 - 13:30
     - 台銀金價 (Gold): 09:00 - 15:30
     - 其他: 24/7 (True)
     
@@ -31,7 +31,7 @@ def is_taiwan_market_open(symbol: str) -> bool:
     current_time = now.time()
     
     # 依照標的分別判斷
-    if symbol in ['TSMC', 'UMC', 'Creative']:
+    if symbol in ['TSMC', 'UMC', 'Creative', 'SPG']:
         # 台股交易時間 09:00 - 13:30 (加 5 分鐘緩衝)
         start = time(9, 0)
         end = time(13, 35)

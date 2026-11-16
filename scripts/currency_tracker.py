@@ -26,6 +26,7 @@ CURRENCY_PAIRS = {
     'TSMC': {'ticker': '2330.TW', 'name': 'TSMC (2330)'},
     'UMC': {'ticker': '2303.TW', 'name': 'UMC (2303)'},
     'Creative': {'ticker': '3443.TW', 'name': 'Creative (3443)'},
+    'SPG': {'ticker': '6768.TW', 'name': 'SPG (6768)'},
     'IntlGold': {'ticker': 'GC=F', 'name': 'Intl Gold (USD/oz)'},
     'NTDVND': {'ticker': 'CALCULATED', 'name': 'NTD vs VND (Cross Rate)'}
 }
@@ -45,8 +46,8 @@ class CurrencyTracker:
             if ticker == 'CALCULATED':
                 continue
             
-            # 檢查市場交易時段
-            if not is_taiwan_market_open(code):
+            # 檢查市場交易時段。還沒有本地檔時仍抓一次，否則新標的在收盤後無法進 latest.json。
+            if not is_taiwan_market_open(code) and self.storage.get_file_path(code).exists():
                 print(f"[{code}] 非交易時段，跳過更新...")
                 continue
                 

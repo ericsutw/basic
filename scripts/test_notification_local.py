@@ -35,7 +35,7 @@ def test_data_integrity():
 
     # 2. Currencies
     currency_storage = CurrencyStorage()
-    for symbol in ['USDTWD', 'USDVND', 'BTC', 'TSMC', 'UMC', 'Creative', 'IntlGold']:
+    for symbol in ['USDTWD', 'USDVND', 'BTC', 'TSMC', 'UMC', 'Creative', 'SPG', 'IntlGold']:
         latest = currency_storage.get_latest_price(symbol)
         if latest is not None:
             price = latest.get('Close')

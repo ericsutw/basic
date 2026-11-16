@@ -4,7 +4,7 @@ Welcome to your personal Python automation workspace! This project is a collecti
 
 ## Market quotes
 
-Tracked symbols: Bank of Taiwan gold (TWD 本行買入 / 本行賣出), USDTWD, USDVND, BTC, 2330.TW (`TSMC`), 2303.TW (`UMC`), 3443.TW (`Creative`), GC=F (`IntlGold`), and the NTDVND cross rate.
+Tracked symbols: Bank of Taiwan gold (TWD 本行買入 / 本行賣出), USDTWD, USDVND, BTC, 2330.TW (`TSMC`), 2303.TW (`UMC`), 3443.TW (`Creative`), 6768.TW (`SPG`, 志強-KY), GC=F (`IntlGold`), and the NTDVND cross rate. SPG uses the same Taiwan session window as the other TW stocks (09:00–13:30 Asia/Taipei) and appears in the LINE summary after Creative.
 
 Fetching does not need LINE secrets. From the repository root:
 
