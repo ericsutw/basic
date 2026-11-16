@@ -10,7 +10,7 @@
 - **系統監控**：CPU、記憶體、硬碟使用率監控與告警。
 
 ## ✅ 自動化與雲端
-- **GitHub Actions**：每天早上 8:00 自動執行數據更新。
+- **GitHub Actions**：外部機器推送 `data/latest.json` 後由 notify workflow 發 LINE；每 30 分鐘的 workflow 只在報價超過約 90 分鐘沒更新時才自己抓。
 - **GitHub Pages**：網頁版儀表板 [點此查看](https://ericsutw.github.io/basic/)。
 
 ## ✅ 儀表板特性

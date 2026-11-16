@@ -97,12 +97,13 @@ class LineNotifier:
             if symbol == 'Gold':
                 stats = self.gold_storage.get_latest_price()
                 if stats:
-                    current_price = stats['sell_price']
+                    # 本行買入。賣出價仍留在 CSV，不拿來通知。
+                    current_price = stats['buy_price']
                     last_timestamp = str(stats.get('date', ''))
                     # Get previous price
                     df = self.gold_storage.load_data()
                     if len(df) > 1:
-                        prev_price = df.iloc[-2]['sell_price']
+                        prev_price = df.iloc[-2]['buy_price']
                     name = "黃金 (Gold)"
             else:
                 latest = self.currency_storage.get_latest_price(symbol)
@@ -210,78 +211,36 @@ class LineNotifier:
             return f"➖ {abs_pct:.2f}%"
 
     def send_daily_summary(self):
-        """傳送每日行情摘要"""
-        # 取得台北目前日期 MM/DD
-        tpe_tz = pytz.timezone('Asia/Taipei')
-        now_tpe = datetime.now(tpe_tz)
-        today_val = now_tpe.strftime('%m/%d')
-        
-        summary_lines = ["📊 每日行情摘要"]
-        
-        # 1. Gold
-        gold_stats = self.gold_storage.get_latest_price()
-        if gold_stats:
-            price = gold_stats['sell_price']
-            # 格式化日期為 MM/DD
-            date_str = str(gold_stats['date'])[:10][-5:].replace('-', '/')
-            
-            # 如果日期是今天，則不顯示日期，否則顯示 (MM/DD)
-            display_date = f" ({date_str})" if date_str != today_val else ""
-            
-            df = self.gold_storage.load_data()
-            change_str = ""
-            if len(df) > 1:
-                prev = df.iloc[-2]['sell_price']
-                change_str = self.format_change(price, prev)
-            summary_lines.append(f"Gold{display_date}: {price:,.0f} {change_str}")
-            
-        # 2. Currencies & Stocks
-        symbols = ['USDTWD', 'USDVND', 'BTC', 'TSMC', 'UMC', 'Creative', 'IntlGold']
-        for code in symbols:
-            latest = self.currency_storage.get_latest_price(code)
-            if latest is not None:
-                price = latest['Close']
-                # 格式化日期為 MM/DD
-                date_str = str(latest.get('Date', ''))[:10][-5:].replace('-', '/')
-                
-                # 如果日期是今天，則不顯示日期，否則顯示 (MM/DD)
-                display_date = f" ({date_str})" if date_str != today_val else ""
-                
-                df = self.currency_storage.load_data(code)
-                change_str = ""
-                if len(df) > 1:
-                    prev = self.get_previous_day_close(df, latest.get('Date', ''))
-                    change_str = self.format_change(price, prev)
-                summary_lines.append(f"{code}{display_date}: {price:,.2f} {change_str}")
-
-        return "\n".join(summary_lines)
+        """傳送每日行情摘要（黃金用本行買入）"""
+        from quote_snapshot import build_payload, format_summary
+        return format_summary(build_payload(self.gold_storage, self.currency_storage)["quotes"])
 
     def should_send_summary(self):
-        """判斷是否該發送每日總表 (1天3次: 09:00, 11:50, 16:00 ICT)"""
-        # 目標時間 (UTC): 02:00, 04:50, 09:00
-        now = datetime.utcnow()
-        today_str = now.strftime('%Y-%m-%d')
-        
-        # 轉換成當天的目標時間
-        target_times = {
-            'morning': now.replace(hour=2, minute=0, second=0, microsecond=0),
-            'noon': now.replace(hour=4, minute=50, second=0, microsecond=0),
-            'afternoon': now.replace(hour=9, minute=0, second=0, microsecond=0)
-        }
-        
-        # 依照時間先後順序檢查，確保我們檢查到最近的一個時間點
-        for slot, target_time in target_times.items():
+        """判斷是否該發送每日總表 (1天最多3次: 09:00, 11:50, 16:00 Asia/Saigon)"""
+        saigon = pytz.timezone("Asia/Saigon")
+        now = datetime.now(saigon)
+        today_str = now.strftime("%Y-%m-%d")
+
+        # 一天最多三次。每次執行只發最早一個尚未發過、且時間已到的時段。
+        target_times = [
+            ("morning", now.replace(hour=9, minute=0, second=0, microsecond=0)),
+            ("noon", now.replace(hour=11, minute=50, second=0, microsecond=0)),
+            ("afternoon", now.replace(hour=16, minute=0, second=0, microsecond=0)),
+        ]
+
+        for slot, target_time in target_times:
             state_key = f"summary_sent_{slot}"
-            # 如果現在超過「目標時間」，且今天還沒發過
-            if now >= target_time:
-                if self.alert_state.get(state_key) != today_str:
-                    # 更新狀態並同意發送
-                    self.alert_state[state_key] = today_str
-                    self.save_state()
-                    return True
+            if now >= target_time and self.alert_state.get(state_key) != today_str:
+                self.alert_state[state_key] = today_str
+                self.save_state()
+                return True
         return False
 
-    def run(self, test_mode=False):
+    def run(self, test_mode=False, latest_path=None):
+        if latest_path:
+            self.run_from_latest(latest_path, test_mode=test_mode)
+            return
+
         if not self.messaging_api:
             print("Skipping Line notification (No token)")
             return
@@ -295,23 +254,68 @@ class LineNotifier:
         if test_mode or self.should_send_summary():
             summary_msg = self.send_daily_summary()
             
-        # 決定是否發出 Line 通知
+        self._deliver(summary_msg, alert_msgs, test_mode=test_mode)
+
+    def run_from_latest(self, latest_path, test_mode=False):
+        """Send from data/latest.json. Does not fetch quotes."""
+        from quote_snapshot import format_summary
+
+        path = Path(latest_path)
+        if not path.exists():
+            print(f"ERROR: {path} 不存在，無法發送 LINE。")
+            sys.exit(1)
+        try:
+            payload = json.loads(path.read_text(encoding="utf-8"))
+        except (OSError, json.JSONDecodeError) as exc:
+            print(f"ERROR: 無法讀取 {path}: {exc}")
+            sys.exit(1)
+
+        quotes = payload.get("quotes") or {}
+        if not quotes:
+            print(f"ERROR: {path} 沒有報價。")
+            sys.exit(1)
+        if not test_mode and not self.messaging_api:
+            print("ERROR: LINE_CHANNEL_ACCESS_TOKEN or LINE_USER_ID not set.")
+            sys.exit(1)
+
+        original_state = dict(self.alert_state)
+        alert_msgs = []
+        for alert in payload.get("alerts") or []:
+            state_key = alert.get("state_key")
+            state_value = alert.get("state_value")
+            message = alert.get("message")
+            if not state_key or not message:
+                continue
+            if original_state.get(state_key) == state_value:
+                continue
+            alert_msgs.append(message)
+            if not test_mode:
+                self.alert_state[state_key] = state_value
+        if not test_mode and self.alert_state != original_state:
+            self.save_state()
+
+        summary_msg = ""
+        if test_mode or self.should_send_summary():
+            summary_msg = format_summary(quotes)
+        self._deliver(summary_msg, alert_msgs, test_mode=test_mode)
+
+    def _deliver(self, summary_msg, alert_msgs, test_mode=False):
         if not alert_msgs and not summary_msg:
             print("🔕 靜默巡邏模式：沒有異常變動，也尚未到達總表發布時間。")
             return
-        
+
         final_msg = ""
         if summary_msg:
             final_msg = summary_msg
-            
+
         if alert_msgs:
             if final_msg:
                 final_msg += "\n\n"
             final_msg += "⚠️ 觸發警報:\n" + "\n".join(alert_msgs)
-            
+
         print("Prepare to send message:")
         print(final_msg)
-        
+
         if test_mode:
             print("Test mode: Message not sent.")
             return
@@ -325,14 +329,20 @@ class LineNotifier:
             print("Successfully sent Line message.")
         except Exception as e:
             print(f"Error sending Line message: {e}")
+            sys.exit(1)
 
 def main():
-    parser = argparse.ArgumentParser(description='Line Notify Script')
+    parser = argparse.ArgumentParser(description='LINE Messaging notification')
     parser.add_argument('--test', action='store_true', help='Test mode (do not send)')
+    parser.add_argument(
+        '--from-latest',
+        default=None,
+        help='Read data/latest.json and send. Does not fetch quotes.',
+    )
     args = parser.parse_args()
     
     notifier = LineNotifier()
-    notifier.run(test_mode=args.test)
+    notifier.run(test_mode=args.test, latest_path=args.from_latest)
 
 if __name__ == "__main__":
     main()

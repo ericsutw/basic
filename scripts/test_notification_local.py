@@ -29,7 +29,7 @@ def test_data_integrity():
     gold_storage = GoldPriceStorage()
     gold_latest = gold_storage.get_latest_price()
     if gold_latest:
-        logger.info(f"   [PASS] Gold Data: Price={gold_latest.get('sell_price')} Date={gold_latest.get('date')}")
+        logger.info(f"   [PASS] Gold Data: Buy={gold_latest.get('buy_price')} Date={gold_latest.get('date')}")
     else:
         logger.warning("   [FAIL] Gold Data: No data found (Check scripts/gold_tracker.py)")
 

@@ -33,7 +33,11 @@ git push -u origin main
 1.  點擊 **Settings** > **Actions** > **General**。
 2.  在 **Workflow permissions** 區域，勾選 **Read and write permissions**。
 3.  點擊 **Save**。
-    *   這很重要！因為我們的腳本需要將更新後的數據寫回儲存庫。
+    *   這很重要！Workflow 檔裡的 `permissions: contents: write` 還需要這個設定，否則 `github-actions[bot]` 推送會 403。
+
+報價由外部機器執行 `python scripts/fetch_quotes.py` 後推上 `main`（見 README.md）。推送若改到 `data/latest.json`，`notify.yml` 才會發 LINE Messaging API。Secrets 是 `LINE_CHANNEL_ACCESS_TOKEN` 與 `LINE_USER_ID`。
+
+`daily_update.yml` 只是每 30 分鐘的備援：`data/latest.json` 超過約 90 分鐘沒更新才自己抓資料並推送，不會自己發 LINE，避免和 notify workflow 各發一次。
 
 ## 4. 啟用 GitHub Pages (網頁儀表板)
 1.  點擊 **Settings** > **Pages**。
@@ -45,7 +49,8 @@ git push -u origin main
 ---
 
 ## 專案結構
--   `.github/workflows/daily_update.yml`: 設定每日自動執行更新。
+-   `.github/workflows/daily_update.yml`: `data/latest.json` 超過約 90 分鐘才抓報價並推送。
+-   `.github/workflows/notify.yml`: `main` 上的 `data/latest.json` 有變更時，用 LINE Messaging API 發摘要或警報。
 -   `index.html`: 您的網頁版儀表板。
 -   `data/`: 儲存數據的資料夾。
 -   `scripts/`: Python 程式碼。

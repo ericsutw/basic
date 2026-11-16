@@ -1,0 +1,89 @@
+{
+  "generated_at": "2026-11-16T15:07:27.582940+08:00",
+  "quotes": {
+    "Gold": {
+      "price": 4049.0,
+      "previous_close": 4097.0,
+      "change_percent": -1.171589,
+      "quote_timestamp": "2026-11-16T00:00:00+08:00",
+      "timezone": "Asia/Taipei",
+      "source": "Bank of Taiwan 黃金存摺 TWD 營業時間本行買入 (rate.bot.com.tw)",
+      "stale": false,
+      "buy_price": 4049.0,
+      "sell_price": 4095.0
+    },
+    "USDTWD": {
+      "price": 32.96699905395508,
+      "previous_close": 32.875,
+      "change_percent": 0.279845,
+      "quote_timestamp": "2026-11-16T07:00:00+00:00",
+      "timezone": "UTC",
+      "source": "Yahoo Finance TWD=X",
+      "stale": false
+    },
+    "USDVND": {
+      "price": 25711.0,
+      "previous_close": 25711.0,
+      "change_percent": 0.0,
+      "quote_timestamp": "2026-11-16T04:45:00+00:00",
+      "timezone": "UTC",
+      "source": "Yahoo Finance VND=X",
+      "stale": false
+    },
+    "BTC": {
+      "price": 64745.23046875,
+      "previous_close": 64705.73046875,
+      "change_percent": 0.061046,
+      "quote_timestamp": "2026-11-16T07:00:00+00:00",
+      "timezone": "UTC",
+      "source": "Yahoo Finance BTC-USD",
+      "stale": false
+    },
+    "TSMC": {
+      "price": 2235.0,
+      "previous_close": 2360.0,
+      "change_percent": -5.29661,
+      "quote_timestamp": "2026-11-16T05:00:00+00:00",
+      "timezone": "UTC",
+      "source": "Yahoo Finance 2330.TW",
+      "stale": false
+    },
+    "UMC": {
+      "price": 95.5,
+      "previous_close": 102.5,
+      "change_percent": -6.829268,
+      "quote_timestamp": "2026-11-16T05:00:00+00:00",
+      "timezone": "UTC",
+      "source": "Yahoo Finance 2303.TW",
+      "stale": false
+    },
+    "Creative": {
+      "price": 7750.0,
+      "previous_close": 8625.0,
+      "change_percent": -10.144928,
+      "quote_timestamp": "2026-11-16T04:30:00+00:00",
+      "timezone": "UTC",
+      "source": "Yahoo Finance 3443.TW",
+      "stale": false
+    },
+    "IntlGold": {
+      "price": 3848.60009765625,
+      "previous_close": 3886.300048828125,
+      "change_percent": -0.970073,
+      "quote_timestamp": "2026-11-16T06:45:00+00:00",
+      "timezone": "UTC",
+      "source": "Yahoo Finance GC=F",
+      "stale": false
+    },
+    "NTDVND": {
+      "price": 779.4991236975453,
+      "previous_close": 782.0836501901141,
+      "change_percent": -0.330467,
+      "quote_timestamp": "2026-11-16T04:45:00+00:00",
+      "timezone": "UTC",
+      "source": "Cross rate USDVND / USDTWD",
+      "stale": false
+    }
+  },
+  "alerts": []
+}

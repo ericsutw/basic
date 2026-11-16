@@ -4,6 +4,15 @@
 
 ---
 
+## 📅 2026-11-16：報價抓取與 LINE 通知拆開
+*   **黃金**：改抓台灣銀行黃金存摺頁的營業時間 CSV／表格（`/gold/csv/{YYYY-MM}/TWD/0` 與 `/gold/chart/{YYYY-MM}/TWD`）。抓不到牌價或最新日期仍超過 10 天時，程式以非零狀態結束，不再印出「更新完成」。
+*   **價格標準**：LINE 摘要與黃金警報改用本行買入（`buy_price`）。賣出價仍寫進 CSV。
+*   **抓取**：`python scripts/fetch_quotes.py` 更新 CSV 並寫 `data/latest.json`，不需要 LINE 密鑰。
+*   **通知**：`.github/workflows/notify.yml` 在 `main` 的 `data/latest.json` 變更時，用 LINE Messaging API 發送。每日摘要最多三次（09:00、11:50、16:00 Asia/Saigon）；其餘時間只發 2% 異常或到價警報。
+*   **備援**：`daily_update.yml` 每 30 分鐘檢查；報價檔超過約 90 分鐘才自己抓取並推送，不直接發 LINE。
+
+---
+
 ## 📅 2026-02-15：專案啟動與核心架構
 *   **目標**：建立一個能追蹤金價與匯率的個人工具，並克服先前 Playwright 環境安裝的限制。
 *   **關鍵動作**：
@@ -30,6 +39,6 @@
 ---
 
 ## 📝 待辦開發清單
-- [ ] Line Notify 通知整合
+- [x] LINE 通知（Messaging API，不是已經停用的 Line Notify）
 - [ ] 技術指標分析 (MA/RSI)
 - [ ] 介面更精緻的 UI 改版

@@ -12,7 +12,7 @@ from pathlib import Path
 # 加入 scripts 目錄到路徑
 sys.path.insert(0, str(Path(__file__).parent))
 
-from gold_price_scraper import GoldPriceScraper, RateLimitError
+from gold_price_scraper import GoldPriceScraper, GoldScrapeError, RateLimitError
 from gold_price_storage import GoldPriceStorage
 from gold_price_visualizer import GoldPriceVisualizer
 
@@ -56,35 +56,32 @@ class GoldTracker:
                 # 強制重新抓取
                 print("\n強制模式：重新抓取所有資料...")
                 data = self.scraper.fetch_data(start_date, end_date, wait_if_needed=True)
-                if not data.empty:
-                    self.storage.merge_and_save(data)
-                    print(f"\n✓ 成功抓取並儲存 {len(data)} 筆資料")
-                else:
-                    print("\n✗ 未抓取到資料")
             else:
                 # 智能模式：只抓取缺失的資料
                 print("\n智能模式：檢查本地資料...")
                 missing_ranges = self.storage.find_missing_dates(start_date, end_date)
-                
+
                 if not missing_ranges:
                     print("\n✓ 本地已有完整資料，無需查詢")
                     print(f"資料範圍: {start_date.date()} 到 {end_date.date()}")
+                    data = None
                 else:
                     print(f"\n發現 {len(missing_ranges)} 個缺失的日期範圍:")
                     for i, (start, end) in enumerate(missing_ranges, 1):
                         print(f"  {i}. {start.date()} 到 {end.date()}")
-                    
+
                     print("\n開始抓取缺失的資料...")
                     data = self.scraper.fetch_missing_ranges(missing_ranges, wait_if_needed=True)
-                    
-                    if not data.empty:
-                        self.storage.merge_and_save(data)
-                        print(f"\n✓ 成功抓取並儲存 {len(data)} 筆新資料")
-                    else:
-                        print("\n✗ 未抓取到新資料")
-        
-        except RateLimitError as e:
-            print(f"\n✗ 錯誤: {e}")
+
+            if data is not None:
+                if not data.empty:
+                    self.storage.merge_and_save(data)
+                    print(f"\n✓ 成功抓取並儲存 {len(data)} 筆資料")
+                else:
+                    print("\n✓ 牌價來源有回應，這個範圍沒有新的營業日資料")
+
+        except (RateLimitError, GoldScrapeError) as e:
+            print(f"\n✗ 黃金價格抓取失敗: {e}")
             return False
         except Exception as e:
             print(f"\n✗ 發生錯誤: {e}")
@@ -161,14 +158,46 @@ class GoldTracker:
                 end_date=datetime.now(),
                 force=False
             )
-            
-            if success:
-                print("\n✓ 黃金價格資料更新完成")
-            else:
+            if not success:
                 print("\n✗ 黃金價格資料更新失敗")
-                
+                return False
+
+            latest_price = self.storage.get_latest_price()
+            latest_day = self._as_date(latest_price.get("date") if latest_price else None)
+            if latest_day is None:
+                print("\n✗ 黃金價格資料更新失敗：本地沒有任何牌價")
+                return False
+
+            age_days = (datetime.now().date() - latest_day).days
+            buy = latest_price.get("buy_price")
+            sell = latest_price.get("sell_price")
+            # 連假最長大約十天。超過這個距離仍停在舊日期，就是抓取失敗，不能回報完成。
+            if age_days > 10:
+                print(
+                    f"\n✗ 黃金最新牌價仍停在 {latest_day}（{age_days} 天前，"
+                    f"本行買入 {buy} / 本行賣出 {sell}）。拒絕回報更新完成。"
+                )
+                return False
+
+            print(
+                f"\n✓ 黃金價格資料更新完成："
+                f"{latest_day} 本行買入 {float(buy):,.0f} / 本行賣出 {float(sell):,.0f}"
+            )
+            return True
+
         except Exception as e:
             print(f"\n✗ 更新過程中發生錯誤: {e}")
+            return False
+
+    @staticmethod
+    def _as_date(value):
+        if value is None:
+            return None
+        if hasattr(value, "to_pydatetime"):
+            value = value.to_pydatetime()
+        if isinstance(value, str):
+            value = datetime.strptime(value[:10], "%Y-%m-%d")
+        return value.date() if hasattr(value, "date") else value
 
 
 def main():
@@ -243,7 +272,8 @@ def main():
         if args.end:
             end_date = datetime.strptime(args.end, '%Y-%m-%d')
         
-        tracker.fetch(start_date, end_date, force=args.force)
+        ok = tracker.fetch(start_date, end_date, force=args.force)
+        sys.exit(0 if ok else 1)
     
     elif args.command == 'show':
         tracker.show(time_range=args.range, save=args.save)
@@ -252,7 +282,8 @@ def main():
         tracker.stats(time_range=args.range)
     
     elif args.command == 'update':
-        tracker.update()
+        ok = tracker.update()
+        sys.exit(0 if ok else 1)
 
 
 if __name__ == '__main__':
